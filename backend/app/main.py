@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
@@ -15,6 +14,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.routes import router
+app.include_router(router)
+
 @app.get("/")
 def root():
     return {"status": "ok", "message": "Pine Backtester API running"}
@@ -22,9 +24,3 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
-
-# TODO: Alpaca API routes
-# - POST /backtest - run a backtest
-# - GET /strategies - list strategies
-# - POST /strategies - save strategy
-# - GET /results/{id} - get backtest results

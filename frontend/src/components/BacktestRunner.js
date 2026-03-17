@@ -14,9 +14,12 @@ import {
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 
+const API_URL = 'http://localhost:8000';
+
 const BacktestRunner = ({ onBacktestComplete }) => {
   const [symbol, setSymbol] = useState('SPY');
   const [window, setWindow] = useState('30');
+  const [strategyCode, setStrategyCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -25,29 +28,25 @@ const BacktestRunner = ({ onBacktestComplete }) => {
     setError(null);
     
     try {
-      // TODO: Connect to backend API
-      // const response = await fetch('http://localhost:8000/backtest', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ symbol, window: parseInt(window), strategy })
-      // });
+      const response = await fetch(`${API_URL}/backtest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          symbol, 
+          window_days: parseInt(window),
+          strategy_code: strategyCode || 'default',
+          initial_capital: 10000
+        })
+      });
       
-      // Simulated result for now
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || 'Backtest failed');
+      }
       
-      const mockResult = {
-        symbol,
-        window: parseInt(window),
-        totalTrades: Math.floor(Math.random() * 20) + 5,
-        winRate: (Math.random() * 0.4 + 0.4).toFixed(2),
-        totalPnL: (Math.random() * 2000 - 500).toFixed(2),
-        sharpeRatio: (Math.random() * 2 + 0.5).toFixed(2),
-        maxDrawdown: (Math.random() * 15 + 5).toFixed(1),
-        avgHoldTime: Math.floor(Math.random() * 5) + 1,
-        trades: []
-      };
+      const result = await response.json();
+      onBacktestComplete(result);
       
-      onBacktestComplete(mockResult);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -59,9 +58,13 @@ const BacktestRunner = ({ onBacktestComplete }) => {
     <Paper sx={{ p: 3 }}>
       <Typography variant="h6" gutterBottom>Run Backtest</Typography>
       
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
       
-      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mb: 2 }}>
         <TextField
           label="Symbol"
           value={symbol}
@@ -80,16 +83,28 @@ const BacktestRunner = ({ onBacktestComplete }) => {
             <MenuItem value="60">60 Days</MenuItem>
           </Select>
         </FormControl>
-
-        <Button
-          variant="contained"
-          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <PlayArrowIcon />}
-          onClick={handleRun}
-          disabled={loading || !symbol}
-        >
-          {loading ? 'Running...' : 'Run Backtest'}
-        </Button>
       </Box>
+
+      <TextField
+        fullWidth
+        multiline
+        rows={4}
+        label="Strategy Code (optional - leave empty for default SMA crossover)"
+        value={strategyCode}
+        onChange={(e) => setStrategyCode(e.target.value)}
+        sx={{ mb: 2, fontFamily: 'monospace', fontSize: '0.8rem' }}
+        placeholder="// Pine Script code (advanced)"
+      />
+
+      <Button
+        variant="contained"
+        startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <PlayArrowIcon />}
+        onClick={handleRun}
+        disabled={loading || !symbol}
+        size="large"
+      >
+        {loading ? 'Running Backtest...' : 'Run Backtest'}
+      </Button>
     </Paper>
   );
 };
