@@ -82,20 +82,20 @@ def run_backtest(request: BacktestRequest):
         )
         
         # Calculate date range - use date-only strings for Alpaca
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=request.window_days)
+        end_date_str = datetime.now().strftime('%Y-%m-%d')
+        start_date_str = (datetime.now() - timedelta(days=request.window_days)).strftime('%Y-%m-%d')
         
         # Fetch historical data - Alpaca expects YYYY-MM-DD format
         bars = api.get_bars(
             request.symbol,
             timeframe="1Day",
-            start=start_date.strftime('%Y-%m-%d'),
-            end=end_date.strftime('%Y-%m-%d')
+            start=start_date_str,
+            end=end_date_str
         )
         
         df = pd.DataFrame([
             {
-                "date": bar.t,
+                "date": str(bar.t)[:10],  # YYYY-MM-DD only
                 "open": bar.o,
                 "high": bar.h,
                 "low": bar.l,
