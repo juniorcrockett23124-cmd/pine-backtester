@@ -69,38 +69,44 @@ def parse_pine_script(request: ParseRequest):
 def run_backtest(request: BacktestRequest):
     """Run a backtest for the given strategy"""
     try:
-        from alpaca_trade_api import REST
+        from alpaca.data.historical import StockHistoricalDataClient
+        from alpaca.data.requests import StockBarsRequest
+        from alpaca.data.timeframe import TimeFrame
         from dotenv import load_dotenv
         import os
         
         load_dotenv()
         
-        api = REST(
+        # Initialize Alpaca client (no secret needed for paper API key)
+        client = StockHistoricalDataClient(
             os.getenv("ALPACA_API_KEY"),
-            os.getenv("ALPACA_SECRET_KEY"),
-            os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
+            os.getenv("ALPACA_SECRET_KEY")
         )
         
-        # Calculate date range - use date-only strings for Alpaca
-        end_date_str = datetime.now().strftime('%Y-%m-%d')
-        start_date_str = (datetime.now() - timedelta(days=request.window_days)).strftime('%Y-%m-%d')
+        # Calculate date range
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=request.window_days)
         
-        # Fetch historical data - Alpaca expects YYYY-MM-DD format
-        bars = api.get_bars(
-            request.symbol,
-            timeframe="1Day",
-            start=start_date_str,
-            end=end_date_str
+        # Create request
+        request_params = StockBarsRequest(
+            symbol_or_symbols=request.symbol,
+            timeframe=TimeFrame.Day,
+            start=start_date.strftime('%Y-%m-%d'),
+            end=end_date.strftime('%Y-%m-%d')
         )
         
-        df = pd.DataFrame([
+        # Fetch historical data
+        bars = client.get_stock_bars(request_params)
+        
+        # Convert to DataFrame
+        df = bars.df if hasattr(bars, 'df') else pd.DataFrame([
             {
-                "date": str(bar.t)[:10],  # YYYY-MM-DD only
-                "open": bar.o,
-                "high": bar.h,
-                "low": bar.l,
-                "close": bar.c,
-                "volume": bar.v
+                "date": str(bar.timestamp)[:10],
+                "open": bar.open,
+                "high": bar.high,
+                "low": bar.low,
+                "close": bar.close,
+                "volume": bar.volume
             }
             for bar in bars
         ])

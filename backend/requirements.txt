@@ -1,6 +1,6 @@
 fastapi
 uvicorn
 python-dotenv
-alpaca-trade-api
+alpaca-py
 pandas
 numpy
