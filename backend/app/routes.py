@@ -81,16 +81,16 @@ def run_backtest(request: BacktestRequest):
             os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
         )
         
-        # Calculate date range
+        # Calculate date range - use date-only strings for Alpaca
         end_date = datetime.now()
         start_date = end_date - timedelta(days=request.window_days)
         
-        # Fetch historical data
+        # Fetch historical data - Alpaca expects YYYY-MM-DD format
         bars = api.get_bars(
             request.symbol,
             timeframe="1Day",
-            start=start_date.isoformat(),
-            end=end_date.isoformat()
+            start=start_date.strftime('%Y-%m-%d'),
+            end=end_date.strftime('%Y-%m-%d')
         )
         
         df = pd.DataFrame([
