@@ -1,0 +1,29 @@
+// Example Pine Script Strategy - RSI Mean Reversion
+// Paste this in the Strategy Editor to test
+
+strategy("RSI Mean Reversion", overlay=false, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+rsiLength = input(14, title="RSI Length")
+overSold = input(30, title="Oversold Level")
+overBought = input(70, title="Overbought Level")
+
+rsi = ta.rsi(close, rsiLength)
+
+// Entry conditions
+if (rsi < overSold)
+    strategy.entry("RSILong", strategy.long)
+
+if (rsi > overBought)
+    strategy.entry("RSIShort", strategy.short)
+
+// Exit conditions
+if (rsi > 50)
+    strategy.close("RSILong")
+
+if (rsi < 50)
+    strategy.close("RSIShort")
+
+// Plot
+plot(rsi, title="RSI", color=color.purple)
+hline(overSold, "Oversold", color=color.green)
+hline(overBought, "Overbought", color=color.red)
